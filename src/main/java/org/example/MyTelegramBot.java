@@ -32,7 +32,7 @@ public class MyTelegramBot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
-
+            System.out.println(chatId);
             String response = commandHandler.handleCommand(messageText, chatId);
             sendMessage(chatId, response);
 
@@ -61,7 +61,7 @@ public class MyTelegramBot extends TelegramLongPollingBot {
     }
 
 
-    private void sendMessage(long chatId, String text) {
+    public void sendMessage(long chatId, String text) {
         SendMessage message = new SendMessage();
         message.setChatId(String.valueOf(chatId));
         message.setText(text);

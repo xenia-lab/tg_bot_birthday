@@ -14,12 +14,15 @@ public class CommandHandler {
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private final GiftCommandHandler giftCommandHandler;
     private final StatisticsCommandHandler statisticsCommandHandler;
+    private final ReminderCommandHandler reminderCommandHandler;
 
     public CommandHandler(DatabaseHandler dbHandler, Storage storage) {
         this.dbHandler = dbHandler;
         this.storage = storage;
         this.giftCommandHandler = new GiftCommandHandler(dbHandler, this);
         this.statisticsCommandHandler = new StatisticsCommandHandler(dbHandler);
+        this.reminderCommandHandler = new ReminderCommandHandler(dbHandler, this);
+
     }
 
     public String handleCommand(String messageText, long chatId) {
@@ -35,12 +38,20 @@ public class CommandHandler {
                     return giftCommandHandler.handleAwaitingGiftNumberToRemove(messageText);
                 case AWAITING_GIFT_OWNER_NUMBER_TO_VIEW:
                     return giftCommandHandler.handleAwaitingGiftOwnerNumberForView(messageText);
+                case AWAITING_REMINDER_THEME:
+                    return reminderCommandHandler.handleAwaitingReminderTheme(messageText);
+                case AWAITING_REMINDER_DAYS:
+                    return reminderCommandHandler.handleAwaitingReminderDays(messageText);
+                case AWAITING_REMINDER_TIME:
+                    return reminderCommandHandler.handleAwaitingReminderTime(messageText);
+                case AWAITING_REMINDER_NUMBER_TO_REMOVE:
+                    return reminderCommandHandler.handleAwaitingReminderNumberToRemove(messageText);
                 default: {
                     switch (messageText) {
                         case "/start":
                             return "Добро пожаловать в BirthdayHelper Bot!\n\nДля получения списка команд введите /help\nНе забывайте поздравлять близких вам людей!";
                         case "/help":
-                            return "Доступные команды:\n/start - запуск\n/add_new_birthday - добавление дня рождения\n/remove_birthday - удаление дня рождения\n/add_gift - добавляет подарок в список подарков\n/remove_gift - удаляет подарок из списка подарков\n/view_gifts - выводит список подарков для конкретного человека\n/example_of_congratulations - пример поздравления\n/statistics - статистика на ближайший месяц\n/help - список команд";
+                            return "Доступные команды:\n/start - запуск\n/add_new_birthday - добавление дня рождения\n/remove_birthday - удаление дня рождения\n/add_gift - добавляет подарок в список подарков\n/remove_gift - удаляет подарок из списка подарков\n/view_gifts - выводит список подарков для конкретного человека\n/set_reminder - добавляет уведомление\n/remove_reminder - удаляет уведомление\n/example_of_congratulations - пример поздравления\n/statistics - статистика на ближайший месяц\n/help - список команд";
                         case "/add_new_birthday":
                             botState = State.AWAITING_NAME;
                             return "Введите Имя для добавления дня рождения:";
@@ -64,6 +75,10 @@ public class CommandHandler {
                             return giftCommandHandler.handleRemoveGiftCommand();
                         case "/view_gifts":
                             return giftCommandHandler.handleViewGiftCommand();
+                        case "/set_reminder":
+                            return reminderCommandHandler.handleSetReminderCommand();
+                        case "/remove_reminder":
+                            return reminderCommandHandler.handleRemoveReminderCommand();
                         case "/statistics":
                             return statisticsCommandHandler.handleStatisticsCommand();
                         default:

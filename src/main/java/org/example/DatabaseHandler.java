@@ -4,6 +4,7 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.time.LocalTime;
 import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ public class DatabaseHandler {
     public void createTables() {
         createBirthdaysTable();
         createGiftsTable();
+        createRemindersTable();
     }
 
     public void createBirthdaysTable() {
@@ -53,6 +55,24 @@ public class DatabaseHandler {
                 + "id SERIAL PRIMARY KEY,\n"
                 + "name_gift VARCHAR(255) NOT NULL,\n"
                 + "person_id INTEGER REFERENCES birthdays(id) \n"
+                + ");";
+
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+            System.out.println("Таблица создана");
+        } catch (SQLException e) {
+            System.err.println("Ошибка создания таблицы:");
+            e.printStackTrace();
+        }
+    }
+
+    public void createRemindersTable() {
+        String sql = "CREATE TABLE IF NOT EXISTS reminders (\n"
+                + "id SERIAL PRIMARY KEY,\n"
+                + "days_before INTEGER NOT NULL,\n"
+                + "time TIME NOT NULL, \n"
+                + "theme VARCHAR(255) NOT NULL \n"
                 + ");";
 
         try (Connection conn = getConnection();
@@ -203,5 +223,63 @@ public class DatabaseHandler {
         }
         return birthdays;
     }
+
+    public void addReminder(Reminder reminder) {
+        String sql = "INSERT INTO reminders(days_before, time, theme) VALUES(?, ?, ?)";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, reminder.getDaysBefore());
+            pstmt.setTime(2, Time.valueOf(reminder.getTime()));
+            pstmt.setString(3, reminder.getTheme());
+            pstmt.executeUpdate();
+            System.out.println("Уведомление добавлено.");
+        } catch (SQLException e) {
+            System.err.println("Ошибка добавления уведомления:");
+            e.printStackTrace();
+        }
+    }
+
+    public void removeReminder(int reminderId){
+        String sql = "DELETE FROM reminders WHERE id = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, reminderId);
+            pstmt.executeUpdate();
+
+            System.out.println("Уведомление " + reminderId + " удалено.");
+
+        } catch (SQLException e) {
+            System.err.println("Ошибка удаления уведомления " + reminderId + ":");
+            e.printStackTrace();
+        }
+    }
+
+    public List<Reminder> getAllReminders() {
+        String sql = "SELECT id, days_before, time, theme FROM reminders";
+        List<Reminder> reminders = new ArrayList<>();
+
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                int daysBefore = rs.getInt("days_before");
+                LocalTime time = rs.getTime("time").toLocalTime();
+                String theme = rs.getString("theme");
+                reminders.add(new Reminder(id, daysBefore, time, theme));
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Ошибка получения списка уведомлений:");
+            e.printStackTrace();
+        }
+        return reminders;
+    }
+
+
 
 }
