@@ -7,16 +7,19 @@ public class Birthday {
     private int id;
     private String name;
     private LocalDate birthDate;
+    private String chatId;
 
-    public Birthday(int id, String name, LocalDate birthDate) {
+    public Birthday(int id, String name, LocalDate birthDate, String chatId) {
         this.id = id;
         this.name = name;
         this.birthDate = birthDate;
+        this.chatId = chatId;
     }
 
-    public Birthday(String name, LocalDate birthDate) {
+    public Birthday(String name, LocalDate birthDate, String chatId) {
         this.name = name;
         this.birthDate = birthDate;
+        this.chatId = chatId;
     }
 
     public int getId() {
@@ -41,6 +44,14 @@ public class Birthday {
 
     public void setBirthDate(LocalDate birthDate) {
         this.birthDate = birthDate;
+    }
+
+    public String getChatId() {
+        return chatId;
+    }
+
+    public void setChatId(String chatId) {
+        this.chatId = chatId;
     }
 
     @Override

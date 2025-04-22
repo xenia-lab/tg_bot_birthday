@@ -38,11 +38,11 @@ public class ReminderScheduler {
     }
 
     private void checkReminders() {
-        List<Reminder> allReminders = dbHandler.getAllReminders();
+        List<Reminder> allReminders = dbHandler.getAllReminders(String.valueOf(chatId));
         LocalDate today = LocalDate.now();
         LocalTime now = LocalTime.now();
 
-        List<Birthday> allBirthdays = dbHandler.getAllBirthdays();
+        List<Birthday> allBirthdays = dbHandler.getAllBirthdays(String.valueOf(chatId));
 
         for (Reminder reminder: allReminders) {
             for (Birthday birthday: allBirthdays) {

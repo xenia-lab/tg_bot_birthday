@@ -3,10 +3,12 @@ package org.example;
 public class Gift {
     private String name;
     private int personId;
+    private String chatId;
 
-    public Gift(String name, int personId) {
+    public Gift(String name, int personId, String chatId) {
         this.name = name;
         this.personId = this.personId;
+        this.chatId = chatId;
     }
 
     public String getName() {
@@ -23,6 +25,14 @@ public class Gift {
 
     public void setpersonId(int personId) {
         this.personId = personId;
+    }
+
+    public String getChatId() {
+        return chatId;
+    }
+
+    public void setChatId(String chatId) {
+        this.chatId = chatId;
     }
 
     @Override

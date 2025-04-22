@@ -35,28 +35,6 @@ public class MyTelegramBot extends TelegramLongPollingBot {
             System.out.println(chatId);
             String response = commandHandler.handleCommand(messageText, chatId);
             sendMessage(chatId, response);
-
-            /*if (messageText.equals("/start")) {
-                sendMessage(chatId, "Добро пожаловать в BirthdayHelper Bot!\n\nДля получения списка команд введите /help\nНе забывайте поздравлять близких вам людей!");
-            }
-
-            else if(messageText.equals("/example_of_congratulations")){
-                Storage storage = new Storage();
-                sendMessage(chatId, storage.getRandQuote());
-            }
-
-            else if (messageText.equals("/help")) {
-                sendMessage(chatId, "Доступные команды:\n/start - запуск\n/add_new_birthday - добавление дня рождения\n/remove_birthday - удаление дня рождения\n/example_of_congratulations - пример поздравления\n/help - список команд");
-            }
-
-            else if (messageText.equals("/add_new_birthday") ||  messageText.equals("/remove_birthday")) {
-                response = commandHandler.handleCommand(messageText, chatId);
-            }
-
-            else {
-                sendMessage(chatId,"Не понимаю команду. Используйте /help");
-            }*/
-
         }
     }
 

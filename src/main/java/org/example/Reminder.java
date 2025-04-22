@@ -8,12 +8,14 @@ public class Reminder {
     private int daysBefore;
     private LocalTime time;
     private String theme;
+    private String chatId;
 
-    public Reminder(int id, int daysBefore, LocalTime time, String theme) {
+    public Reminder(int id, int daysBefore, LocalTime time, String theme, String chatId) {
         this.id = id;
         this.daysBefore = daysBefore;
         this.time = time;
         this.theme = theme;
+        this.chatId = chatId;
     }
 
     public int getId() {
@@ -46,6 +48,14 @@ public class Reminder {
 
     public void setTheme(String theme) {
         this.theme = theme;
+    }
+
+    public String getChatId() {
+        return chatId;
+    }
+
+    public void setChatId(String chatId) {
+        this.chatId = chatId;
     }
 
     @Override

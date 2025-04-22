@@ -12,6 +12,7 @@ public class ReminderCommandHandler {
     private int tempDaysBefore;
     private String tempTheme;
 
+
     public ReminderCommandHandler(DatabaseHandler dbHandler, CommandHandler mainCommandHandler) {
         this.dbHandler = dbHandler;
         this.mainCommandHandler = mainCommandHandler;
@@ -54,7 +55,7 @@ public class ReminderCommandHandler {
         return "Введите время суток, в которое вы хотите получать напоминание (чч:мм)";
     }
 
-    public String handleAwaitingReminderTime(String messageText) {
+    public String handleAwaitingReminderTime(String messageText, long chatId) {
         LocalTime time;
         try {
             time = LocalTime.parse(messageText, DateTimeFormatter.ofPattern("HH:mm"));
@@ -62,8 +63,8 @@ public class ReminderCommandHandler {
             return "Неверный формат времени. Введите в формате чч:мм.";
         }
 
-        Reminder newReminder = new Reminder(0, tempDaysBefore, time, tempTheme);
-        dbHandler.addReminder(newReminder);
+        Reminder newReminder = new Reminder(0, tempDaysBefore, time, tempTheme, String.valueOf(chatId));
+        dbHandler.addReminder(newReminder, String.valueOf(chatId));
         tempTheme = null;
         tempDaysBefore = 0;
 
@@ -73,8 +74,8 @@ public class ReminderCommandHandler {
 
     }
 
-    public String handleRemoveReminderCommand() {
-        List<Reminder> reminders = dbHandler.getAllReminders();
+    public String handleRemoveReminderCommand(long chatId) {
+        List<Reminder> reminders = dbHandler.getAllReminders(String.valueOf(chatId));
 
         if (reminders.isEmpty()) {
             mainCommandHandler.setBotState(State.IDLE);
@@ -92,11 +93,11 @@ public class ReminderCommandHandler {
         return reminderListBuilder.toString();
     }
 
-    public String handleAwaitingReminderNumberToRemove(String messageText) {
+    public String handleAwaitingReminderNumberToRemove(String messageText, long chatId) {
         int reminderIndex;
         reminderIndex = Integer.parseInt(messageText)-1;
 
-        List<Reminder> reminders = dbHandler.getAllReminders();
+        List<Reminder> reminders = dbHandler.getAllReminders(String.valueOf(chatId));
         if (reminderIndex >= 0 && reminderIndex < reminders.size()) {
             int reminderId = reminders.get(reminderIndex).getId();
             dbHandler.removeReminder(reminderId);

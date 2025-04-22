@@ -37,7 +37,8 @@ public class DatabaseHandler {
         String sql = "CREATE TABLE IF NOT EXISTS birthdays (\n"
                 + "id SERIAL PRIMARY KEY,\n"
                 + "name VARCHAR(255) NOT NULL,\n"
-                + "birth_date DATE NOT NULL\n"
+                + "birth_date DATE NOT NULL,\n"
+                + "chat_id VARCHAR(255) NOT NULL\n"
                 + ");";
 
         try (Connection conn = getConnection();
@@ -54,7 +55,8 @@ public class DatabaseHandler {
         String sql = "CREATE TABLE IF NOT EXISTS gifts (\n"
                 + "id SERIAL PRIMARY KEY,\n"
                 + "name_gift VARCHAR(255) NOT NULL,\n"
-                + "person_id INTEGER REFERENCES birthdays(id) \n"
+                + "person_id INTEGER REFERENCES birthdays(id), \n"
+                + "chat_id VARCHAR(255) NOT NULL \n"
                 + ");";
 
         try (Connection conn = getConnection();
@@ -72,7 +74,8 @@ public class DatabaseHandler {
                 + "id SERIAL PRIMARY KEY,\n"
                 + "days_before INTEGER NOT NULL,\n"
                 + "time TIME NOT NULL, \n"
-                + "theme VARCHAR(255) NOT NULL \n"
+                + "theme VARCHAR(255) NOT NULL, \n"
+                + "chat_id VARCHAR(255) NOT NULL \n"
                 + ");";
 
         try (Connection conn = getConnection();
@@ -86,12 +89,13 @@ public class DatabaseHandler {
     }
 
     public void addBirthday(Birthday birthday) {
-        String sql = "INSERT INTO birthdays(name, birth_date) VALUES(?, ?)";
+        String sql = "INSERT INTO birthdays(name, birth_date, chat_id) VALUES(?, ?, ?)";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, birthday.getName());
             pstmt.setDate(2, Date.valueOf(birthday.getBirthDate()));
+            pstmt.setString(3, String.valueOf(birthday.getChatId()));
             pstmt.executeUpdate();
             System.out.println("День рождение добавлен.");
         } catch (SQLException e) {
@@ -117,13 +121,14 @@ public class DatabaseHandler {
         }
     }
 
-    public List<Birthday> getAllBirthdays() {
-        String sql = "SELECT id, name, birth_date FROM birthdays";
+    public List<Birthday> getAllBirthdays(String chatId) {
+        String sql = "SELECT id, name, birth_date FROM birthdays WHERE chat_id = ?";
         List<Birthday> birthdays = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             pstmt.setString(1, String.valueOf(chatId));
+             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 int id = rs.getInt("id");
@@ -132,7 +137,7 @@ public class DatabaseHandler {
 
                 LocalDate birthDate = birthDateSql.toLocalDate();
 
-                birthdays.add(new Birthday(id, name, birthDate));
+                birthdays.add(new Birthday(id, name, birthDate, chatId));
             }
 
         } catch (SQLException e) {
@@ -142,13 +147,14 @@ public class DatabaseHandler {
         return birthdays;
     }
 
-    public void addGift(String name, int personId) {
-        String sql = "INSERT INTO gifts(name_gift, person_id) VALUES(?, ?)";
+    public void addGift(String name, int personId, String chatId) {
+        String sql = "INSERT INTO gifts(name_gift, person_id, chat_id) VALUES(?, ?, ?)";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, name);
             pstmt.setInt(2, personId);
+            pstmt.setString(3, chatId);
             pstmt.executeUpdate();
             System.out.println("Подарок добавлен.");
         } catch (SQLException e) {
@@ -157,14 +163,15 @@ public class DatabaseHandler {
         }
     }
 
-    public void removeGift(String giftName, int personId) {
-        String sql = "DELETE FROM gifts WHERE name_gift = ? AND person_id = ?";
+    public void removeGift(String giftName, int personId, String chatId) {
+        String sql = "DELETE FROM gifts WHERE id = (SELECT id FROM gifts WHERE name_gift = ? AND person_id = ? AND chat_id = ? LIMIT 1)" ;
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, giftName);
             pstmt.setInt(2, personId);
+            pstmt.setString(3, chatId);
             pstmt.executeUpdate();
 
             System.out.println("Подарок удален.");
@@ -175,18 +182,19 @@ public class DatabaseHandler {
         }
     }
 
-    public List<Gift> getGiftsForPerson(int personId) {
-        String sql = "SELECT name_gift FROM gifts WHERE person_id = ?";
+    public List<Gift> getGiftsForPerson(int personId, String chatId) {
+        String sql = "SELECT name_gift FROM gifts WHERE person_id = ? AND chat_id = ?";
         List<Gift> gifts = new ArrayList<>();
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
              pstmt.setInt(1, personId);
+             pstmt.setString(2, chatId);
              ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 String giftName = rs.getString("name_gift");
-                gifts.add(new Gift(giftName, personId));
+                gifts.add(new Gift(giftName, personId, chatId));
             }
 
         } catch (SQLException e) {
@@ -196,16 +204,17 @@ public class DatabaseHandler {
         return gifts;
     }
 
-    public List<Birthday> getBirthdaysForNextMonth() {
+    public List<Birthday> getBirthdaysForNextMonth(String chatId) {
         List<Birthday> birthdays = new ArrayList<>();
         LocalDate now = LocalDate.now();
         LocalDate nextMonth = now.plusMonths(1);
         LocalDate startOfNextMonth = nextMonth.with(TemporalAdjusters.firstDayOfMonth());
         LocalDate endOfNextMonth = nextMonth.with(TemporalAdjusters.lastDayOfMonth());
 
-        String sql = "SELECT name, birth_date FROM birthdays";
+        String sql = "SELECT name, birth_date FROM birthdays WHERE chat_id = ?";
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, chatId);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
@@ -213,7 +222,7 @@ public class DatabaseHandler {
                 LocalDate birthDate = rs.getDate("birth_date").toLocalDate();
                 LocalDate thisYearBirthday = birthDate.withYear(now.getYear());
                 if (!thisYearBirthday.isBefore(startOfNextMonth) && !thisYearBirthday.isAfter(endOfNextMonth)) {
-                    birthdays.add(new Birthday(name, birthDate));
+                    birthdays.add(new Birthday(name, birthDate, chatId));
                 }
             }
 
@@ -224,14 +233,15 @@ public class DatabaseHandler {
         return birthdays;
     }
 
-    public void addReminder(Reminder reminder) {
-        String sql = "INSERT INTO reminders(days_before, time, theme) VALUES(?, ?, ?)";
+    public void addReminder(Reminder reminder, String chatId) {
+        String sql = "INSERT INTO reminders(days_before, time, theme, chat_id) VALUES(?, ?, ?, ?)";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, reminder.getDaysBefore());
             pstmt.setTime(2, Time.valueOf(reminder.getTime()));
             pstmt.setString(3, reminder.getTheme());
+            pstmt.setString(4, chatId);
             pstmt.executeUpdate();
             System.out.println("Уведомление добавлено.");
         } catch (SQLException e) {
@@ -257,20 +267,21 @@ public class DatabaseHandler {
         }
     }
 
-    public List<Reminder> getAllReminders() {
-        String sql = "SELECT id, days_before, time, theme FROM reminders";
+    public List<Reminder> getAllReminders(String chatId) {
+        String sql = "SELECT id, days_before, time, theme FROM reminders WHERE chat_id = ?";
         List<Reminder> reminders = new ArrayList<>();
 
         try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             pstmt.setString(1, chatId);
+                 ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 int id = rs.getInt("id");
                 int daysBefore = rs.getInt("days_before");
                 LocalTime time = rs.getTime("time").toLocalTime();
                 String theme = rs.getString("theme");
-                reminders.add(new Reminder(id, daysBefore, time, theme));
+                reminders.add(new Reminder(id, daysBefore, time, theme, chatId));
             }
 
         } catch (SQLException e) {

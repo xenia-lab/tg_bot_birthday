@@ -27,25 +27,30 @@ public class CommandHandler {
 
     public String handleCommand(String messageText, long chatId) {
         try {
+
+            if(messageText.startsWith("/")) {
+            setBotState(State.IDLE);
+            }
+
             switch (botState) {
                 case AWAITING_GIFT_OWNER_NUMBER:
-                    return giftCommandHandler.handleAwaitingGiftOwnerNumber(messageText);
+                    return giftCommandHandler.handleAwaitingGiftOwnerNumber(messageText, chatId);
                 case AWAITING_GIFT_NAME:
-                    return giftCommandHandler.handleAwaitingGiftName(messageText);
+                    return giftCommandHandler.handleAwaitingGiftName(messageText, chatId);
                 case AWAITING_GIFT_OWNER_NUMBER_TO_REMOVE:
-                    return giftCommandHandler.handleRemoveGiftAwaitingOwnerNumber(messageText);
+                    return giftCommandHandler.handleRemoveGiftAwaitingOwnerNumber(messageText, chatId);
                 case AWAITING_GIFT_NUMBER_TO_REMOVE:
-                    return giftCommandHandler.handleAwaitingGiftNumberToRemove(messageText);
+                    return giftCommandHandler.handleAwaitingGiftNumberToRemove(messageText, chatId);
                 case AWAITING_GIFT_OWNER_NUMBER_TO_VIEW:
-                    return giftCommandHandler.handleAwaitingGiftOwnerNumberForView(messageText);
+                    return giftCommandHandler.handleAwaitingGiftOwnerNumberForView(messageText, chatId);
                 case AWAITING_REMINDER_THEME:
                     return reminderCommandHandler.handleAwaitingReminderTheme(messageText);
                 case AWAITING_REMINDER_DAYS:
                     return reminderCommandHandler.handleAwaitingReminderDays(messageText);
                 case AWAITING_REMINDER_TIME:
-                    return reminderCommandHandler.handleAwaitingReminderTime(messageText);
+                    return reminderCommandHandler.handleAwaitingReminderTime(messageText, chatId);
                 case AWAITING_REMINDER_NUMBER_TO_REMOVE:
-                    return reminderCommandHandler.handleAwaitingReminderNumberToRemove(messageText);
+                    return reminderCommandHandler.handleAwaitingReminderNumberToRemove(messageText, chatId);
                 default: {
                     switch (messageText) {
                         case "/start":
@@ -56,31 +61,32 @@ public class CommandHandler {
                             botState = State.AWAITING_NAME;
                             return "Введите Имя для добавления дня рождения:";
                         case "/remove_birthday":
-                            List<Birthday> birthdays = dbHandler.getAllBirthdays();
+                            List<Birthday> birthdays = dbHandler.getAllBirthdays(String.valueOf(chatId));
                             if (birthdays.isEmpty()) {
                                 return "Список дней рождений пуст!";
                             }
                             StringBuilder sb = new StringBuilder("Список всех дней рождений:\n");
-                            for (Birthday birthday : birthdays) {
-                                sb.append(birthday).append("\n");
+                            for (int i = 0; i < birthdays.size(); i++) {
+                                Birthday birthday = birthdays.get(i);
+                                sb.append((i + 1)).append(". ").append(birthday.getName()).append(" ").append(birthday.getBirthDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))).append("\n");
                             }
-                            sb.append("Введите ID записи, которую хотите удалить:");
+                            sb.append("Введите номер записи, которую хотите удалить:");
                             botState = State.AWAITING_ID_TO_REMOVE;
                             return sb.toString();
                         case "/example_of_congratulations":
                             return storage.getRandQuote();
                         case "/add_gift":
-                            return giftCommandHandler.handleAddGiftCommand();
+                            return giftCommandHandler.handleAddGiftCommand(chatId);
                         case "/remove_gift":
-                            return giftCommandHandler.handleRemoveGiftCommand();
+                            return giftCommandHandler.handleRemoveGiftCommand(chatId);
                         case "/view_gifts":
-                            return giftCommandHandler.handleViewGiftCommand();
+                            return giftCommandHandler.handleViewGiftCommand(chatId);
                         case "/set_reminder":
                             return reminderCommandHandler.handleSetReminderCommand();
                         case "/remove_reminder":
-                            return reminderCommandHandler.handleRemoveReminderCommand();
+                            return reminderCommandHandler.handleRemoveReminderCommand(chatId);
                         case "/statistics":
-                            return statisticsCommandHandler.handleStatisticsCommand();
+                            return statisticsCommandHandler.handleStatisticsCommand(String.valueOf(chatId));
                         default:
                             if (botState == State.AWAITING_NAME) {
                                 tempName = messageText;
@@ -89,7 +95,7 @@ public class CommandHandler {
                             } else if (botState == State.AWAITING_DATE) {
                                 try {
                                     LocalDate birthDate = LocalDate.parse(messageText, dateFormatter);
-                                    Birthday newBirthday = new Birthday(tempName, birthDate);
+                                    Birthday newBirthday = new Birthday(tempName, birthDate, String.valueOf(chatId));
                                     dbHandler.addBirthday(newBirthday);
                                     botState = State.IDLE;
                                     return "День рождения " + tempName + " добавлен!";
@@ -99,13 +105,22 @@ public class CommandHandler {
                                 }
                             } else if (botState == State.AWAITING_ID_TO_REMOVE) {
                                 try {
-                                    int idToRemove = Integer.parseInt(messageText);
-                                    dbHandler.removeBirthday(idToRemove);
-                                    botState = State.IDLE;
-                                    return "День рождения с ID " + idToRemove + " удален!";
+                                    int numberToRemove = Integer.parseInt(messageText);
+                                    List<Birthday> birthdaysToRemove = dbHandler.getAllBirthdays(String.valueOf(chatId));
+                                    if (numberToRemove >= 1 && numberToRemove <= birthdaysToRemove.size()) {
+                                        Birthday birthdayToRemove = birthdaysToRemove.get(numberToRemove-1);
+                                        int idToRemove = birthdayToRemove.getId();
+                                        dbHandler.removeBirthday(idToRemove);
+                                        botState = State.IDLE;
+                                        return "День рождения с номером " + numberToRemove + " удален!";
+                                    } else {
+                                        botState = State.AWAITING_ID_TO_REMOVE;
+                                        return "Неверный номер. Введите номер из списка.";
+                                    }
+
                                 } catch (NumberFormatException e) {
                                     botState = State.AWAITING_ID_TO_REMOVE;
-                                    return "Неверный формат ID. Введите числовой ID из списка.";
+                                    return "Неверный формат номера. Введите номер из списка.";
                                 }
                             }
                             return "Не понимаю команду. Используйте /help";

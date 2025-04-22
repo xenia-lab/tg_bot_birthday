@@ -12,8 +12,8 @@ public class StatisticsCommandHandler {
     public StatisticsCommandHandler(DatabaseHandler dbHandler) {
         this.dbHandler = dbHandler;
     }
-    public String handleStatisticsCommand() {
-        List<Birthday> birthdaysNextMonth = dbHandler.getBirthdaysForNextMonth();
+    public String handleStatisticsCommand(String chatId) {
+        List<Birthday> birthdaysNextMonth = dbHandler.getBirthdaysForNextMonth(chatId);
 
         Collections.sort(birthdaysNextMonth, Comparator.comparing(b -> b.getBirthDate().getDayOfMonth()));
 
