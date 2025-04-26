@@ -95,6 +95,13 @@ public class CommandHandler {
                             } else if (botState == State.AWAITING_DATE) {
                                 try {
                                     LocalDate birthDate = LocalDate.parse(messageText, dateFormatter);
+                                    LocalDate currentDate = LocalDate.now();
+
+                                    if (birthDate.isAfter(currentDate)) {
+                                        botState = State.AWAITING_DATE;
+                                        return "Нельзя ввести день рождения для человека, который еще не родился. Введите корректную дату!";
+                                    }
+
                                     Birthday newBirthday = new Birthday(tempName, birthDate, String.valueOf(chatId));
                                     dbHandler.addBirthday(newBirthday);
                                     botState = State.IDLE;

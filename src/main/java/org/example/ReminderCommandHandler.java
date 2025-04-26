@@ -45,9 +45,16 @@ public class ReminderCommandHandler {
     }
 
     public String handleAwaitingReminderDays(String messageText) {
+        final int MAX_DAYS_BEfORE = 36500;
         try {
             tempDaysBefore = Integer.parseInt(messageText);
+
+            if (tempDaysBefore > MAX_DAYS_BEfORE) {
+                mainCommandHandler.setBotState(State.AWAITING_REMINDER_DAYS);
+                return "Максимальное количество дней 36500 (это примерно 100 лет). Введите число.";
+            }
         } catch  (NumberFormatException e) {
+            mainCommandHandler.setBotState(State.AWAITING_REMINDER_DAYS);
             return "Неверный формат. Введите целое число.";
         }
 
@@ -60,6 +67,7 @@ public class ReminderCommandHandler {
         try {
             time = LocalTime.parse(messageText, DateTimeFormatter.ofPattern("HH:mm"));
         } catch  (DateTimeParseException e) {
+            mainCommandHandler.setBotState(State.AWAITING_REMINDER_TIME);
             return "Неверный формат времени. Введите в формате чч:мм.";
         }
 
@@ -94,18 +102,23 @@ public class ReminderCommandHandler {
     }
 
     public String handleAwaitingReminderNumberToRemove(String messageText, long chatId) {
-        int reminderIndex;
-        reminderIndex = Integer.parseInt(messageText)-1;
+        try {
+            int reminderIndex;
+            reminderIndex = Integer.parseInt(messageText) - 1;
 
-        List<Reminder> reminders = dbHandler.getAllReminders(String.valueOf(chatId));
-        if (reminderIndex >= 0 && reminderIndex < reminders.size()) {
-            int reminderId = reminders.get(reminderIndex).getId();
-            dbHandler.removeReminder(reminderId);
-            mainCommandHandler.setBotState(State.IDLE);
-            return "Напоминание удалено!";
-        } else {
-            mainCommandHandler.setBotState(State.IDLE);
-            return "Неверный номер напоминания.";
+            List<Reminder> reminders = dbHandler.getAllReminders(String.valueOf(chatId));
+            if (reminderIndex >= 0 && reminderIndex < reminders.size()) {
+                int reminderId = reminders.get(reminderIndex).getId();
+                dbHandler.removeReminder(reminderId);
+                mainCommandHandler.setBotState(State.IDLE);
+                return "Напоминание удалено!";
+            } else {
+                mainCommandHandler.setBotState(State.IDLE);
+                return "Неверный номер напоминания. Введите номер из спика.";
+            }
+        } catch (NumberFormatException e) {
+            mainCommandHandler.setBotState(State.AWAITING_REMINDER_NUMBER_TO_REMOVE);
+            return "Неверный формат номера. Введите номер из списка.";
         }
     }
 }
